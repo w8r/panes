@@ -18,7 +18,7 @@
         return Object.prototype.toString.call(object) == '[object Array]';
     };
 
-    this.Panes = mvc.View.extend({
+    var Panes = this.Panes = mvc.View.extend({
         tagName: 'div',
         className: 'panes',
         defaultView: Pane,
@@ -122,7 +122,7 @@
             if(!isArray(models)) {
                 models = [models];
             }
-            var fragment = this.container,
+            var fragment = document.createDocumentFragment(),
                 pane, width = 0,
                 model;
 
@@ -171,8 +171,8 @@
 
         render: function() {
             console.log('Panes:render', arguments);
-            // create all the panes
-            this.createPanes(this.model.models);
+            // create all the panes at once
+            this.container.appendChild(this.createPanes(this.model.models));
         }
 
     });
