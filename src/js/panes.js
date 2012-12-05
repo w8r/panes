@@ -21,7 +21,7 @@
     this.Panes = mvc.View.extend({
         tagName: 'div',
         className: 'panes',
-        defaultView: ItemView,
+        defaultView: Pane,
 
         initialize: function(options) {
             console.log('Panes:constructor', options);
@@ -94,6 +94,8 @@
             this.createPanes(model);
         },
 
+        preparePlace: function(model) {},
+
         removePane: function() {
             console.log('Panes:removePane', arguments);
         },
@@ -121,7 +123,6 @@
                 models = [models];
             }
             var fragment = this.container,
-                //document.createDocumentFragment(),
                 pane, width = 0,
                 model;
 

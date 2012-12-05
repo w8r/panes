@@ -4,9 +4,14 @@
     console.group('Panes test');
     console.group('init');
 
-    var TestModelView = mvc.View.extend();
+    var modelOptions = {
+        view: Pane
+    };
 
-    var models = [new Backbone.Model({}), new Backbone.Model(), new Backbone.Model(), new Backbone.Model()],
+    var models = [new Backbone.Model(modelOptions),
+            new Backbone.Model(modelOptions),
+            new Backbone.Model(modelOptions),
+            new Backbone.Model(modelOptions)],
         collection = new mvc.Collection(models),
         panes = this.panes = new Panes({
             el: $('#viewport'),
