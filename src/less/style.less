@@ -3,7 +3,7 @@
 @paneWidth: 450px;
 @paneMargin: 0 0 0 1rem;
 @containerBg: #ccc;
-@paneBg: #fff;
+@paneBg: #f0f0f0;
 @paneShadow: 0 0 10px rgba(0, 0, 0, 0.4);
 
 body, html {
@@ -22,20 +22,20 @@ body, html {
 
     .panes-container {
         height: 100%;
-        left: 0;
+        left: -50%;
         position: absolute;
         top: 0;
-        width: 100%;
+        width: 200%;
     }
 
     .pane {
         background: @paneBg;
         box-shadow: @paneShadow;
         display: block;
+        float: left;
         height: 100%;
         margin: @paneMargin;
         min-height: 100%;
-        position: absolute;
         width: @paneWidth;
     }
 }

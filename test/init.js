@@ -8,10 +8,12 @@
         view: Pane
     };
 
-    var models = [new Backbone.Model(modelOptions),
-            new Backbone.Model(modelOptions),
-            new Backbone.Model(modelOptions),
-            new Backbone.Model(modelOptions)],
+    var models = [/*new mvc.Model(modelOptions),
+                    new mvc.Model(modelOptions),
+            new mvc.Model(modelOptions),
+            new mvc.Model(modelOptions)*/
+
+        ],
         collection = new mvc.Collection(models),
         panes = this.panes = new Panes({
             el: $('#viewport'),
@@ -20,15 +22,16 @@
 
     // add pane
     $('#add-pane').click(function() {
-        console.log('add pane');
-        collection.add(new Backbone.Model(), {
-            at: collection.length - 1
+        console.log('add pane triggered');
+        collection.add(new mvc.Model(modelOptions), {
+            at: collection.length
         });
     });
 
     // remove pane
     $('#remove-pane').click(function() {
-        console.log('remove pane');
+        console.log('remove pane triggered');
+        var model = collection.pop();
     });
 
     console.groupEnd('init');

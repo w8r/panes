@@ -14,18 +14,18 @@ html {
 }
 .viewport .panes-container {
   height: 100%;
-  left: 0;
+  left: -50%;
   position: absolute;
   top: 0;
-  width: 100%;
+  width: 200%;
 }
 .viewport .pane {
-  background: #ffffff;
+  background: #f0f0f0;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
   display: block;
+  float: left;
   height: 100%;
   margin: 0 0 0 1rem;
   min-height: 100%;
-  position: absolute;
   width: 450px;
 }

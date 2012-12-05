@@ -22,32 +22,64 @@
         tagName: 'div',
         className: 'panes',
         defaultView: Pane,
+        bufferPanes: 3,
+        firstVisiblePane: 0,
+        viewportSize: null,
 
         initialize: function(options) {
             console.log('Panes:constructor', options);
-            _.bindAll(this, 'addPane', 'removePane', 'insertPane', 'fixPane', 'unfixPane');
+            _.bindAll(this, 'addPane', 'removePane', 'insertPane');
 
             this.model.on('add', this.addPane);
             this.model.on('remove', this.removePane);
 
             mvc.View.prototype.initialize.apply(this, arguments);
 
-            this.createPanesContainer();
+            this.updateViewportSize();
+            this.createCanvas();
             this.paneWidth = this.measurePane();
+            this.panesPerViewport = Math.floor(this.viewportSize.w / this.paneWidth);
+            this.adjustCanvasToViewport();
 
             this.render();
+        },
+
+        updateViewportSize: function() {
+            var size = this.viewportSize = {
+                w: this.el.offsetWidth,
+                h: this.el.offsetHeight
+            };
+            return size;
+        },
+
+        /**
+         * @return {Number}
+         */
+        getViewportWidth: function() {
+            return this.el.clientWidth;
         },
 
         /**
          * Creates movable container for panes
          * @return {HTMLElement}
          */
-        createPanesContainer: function() {
+        createCanvas: function() {
             var container = document.createElement('div');
             container.className = 'panes-container';
             this.el.appendChild(container);
             this.container = container;
             return container;
+        },
+
+        /**
+         * Adjust canvas to contain buffer space to the left
+         */
+        adjustCanvasToViewport: function() {
+            var bufferMargin = this.bufferMargin = (this.bufferPanes + 1) * this.paneWidth,
+                width = this.viewportSize.w + bufferMargin;
+            this.container.style.width = width + 'px';
+            this.container.style.height = this.viewportSize.h + 'px';
+            this.container.style.left = -bufferMargin + 'px';
         },
 
         /**
@@ -60,7 +92,7 @@
             pane = pane || this.createPane();
             var width, margins;
 
-            pane.style.left = '9999px';
+            pane.style.left = '-9999px';
             this.container.appendChild(pane);
 
             margins = getStyle(pane, 'margin').split(' ');
@@ -80,36 +112,72 @@
          * @param {Number} [options.index] model index
          */
         addPane: function(model, collection, options) {
-            console.log('Panes:addPane', arguments);
+            console.group('addPane');
+            console.log('Panes:addPane', arguments, options.index, options.at);
             options = options || {};
-            var pos = options.at || 0;
-            var previous = this.container.children[pos - 1];
-            var pane = this.createPane(model);
-            // prepare place
-            this.preparePlace(model)
-            // put it in there
-            this.co
-            // animate
-            // register with model
-            this.createPanes(model);
+            var pos = options.index || 0,
+                pane = this.createPane(model);
+
+            // first pane - position
+            if(pos === 0) {
+                pane.style.marginLeft = this.bufferMargin + 'px';
+            } else if(this.model.length > this.panesPerViewport) {
+                // if there is a margin buffer to use - use it
+                if(this.bufferMargin > this.paneWidth) {
+                    this.bufferMargin -= this.paneWidth;
+                    this.model.models[0]._view.el.style.marginLeft = this.bufferMargin + 'px';
+                } else {
+                    // else start removing(collapsing) panes
+                    // that are out of bounds
+                    var first = this.model.models[this.firstVisiblePane]._view.el,
+                        next = this.model.models[this.firstVisiblePane + 1]._view.el;
+
+                    next.style.marginLeft = first.style.marginLeft;
+                    first.style.marginLeft = '';
+                    first.style.display = 'none';
+
+                    this.firstVisiblePane++;
+                }
+            }
+
+            this.addView(model, pane);
+            this.container.appendChild(pane);
+            console.groupEnd('addPane');
         },
 
         preparePlace: function(model) {},
 
-        removePane: function() {
-            console.log('Panes:removePane', arguments);
+        removePane: function(model, collection, options) {
+            console.group('removePane');
+            console.log('Panes:removePane', arguments, this.model.length, this.panesPerViewport);
+            options = options || {};
+            var pos = collection.indexOf(model),
+                pane = model._view.el;
+
+            if(this.model.length >= this.panesPerViewport) {
+                // there are panes out of view, move them forward
+                var first, prev, margin;
+                if(this.firstVisiblePane === 0) {
+                    first = this.model.models[0]._view.el;
+                    this.bufferMargin += this.paneWidth;
+                    first.style.marginLeft = this.bufferMargin + 'px';
+                } else {
+                    first = this.model.models[this.firstVisiblePane]._view.el;
+                    prev = this.model.models[this.firstVisiblePane - 1]._view.el;
+
+                    prev.style.marginLeft = first.style.marginLeft;
+                    first.style.marginLeft = '';
+                    prev.style.display = 'block';
+
+                    this.firstVisiblePane--;
+                }
+            }
+            this.removeView(model, pane);
+            console.groupEnd('removePane');
         },
 
         insertPane: function() {
             console.log('Panes:insertPane', arguments);
-        },
-
-        fixPane: function() {
-            console.log('Panes:fixPane', arguments);
-        },
-
-        unfixPane: function() {
-            console.log('Panes:unfixPane', arguments);
         },
 
         /**
@@ -163,6 +231,11 @@
             return model;
         },
 
+        removeView: function(model, pane) {
+            pane.parentNode.removeChild(pane);
+            delete model._view;
+        },
+
         createPane: function() {
             var pane = document.createElement('div');
             pane.className = 'pane';
@@ -172,7 +245,7 @@
         render: function() {
             console.log('Panes:render', arguments);
             // create all the panes at once
-            this.container.appendChild(this.createPanes(this.model.models));
+            // this.container.appendChild(this.createPanes(this.model.models));
         }
 
     });
