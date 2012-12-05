@@ -1,0 +1,41 @@
+@white: #fff;
+@gray: #ddd;
+@paneWidth: 450px;
+@paneMargin: 0 0 0 1rem;
+@containerBg: #ccc;
+@paneBg: #fff;
+@paneShadow: 0 0 10px rgba(0, 0, 0, 0.4);
+
+body, html {
+    font: normal 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    padding: 0;
+    width: 100%;
+}
+
+.viewport {
+    background: @containerBg;
+    height: 100%;
+    width: 100%;
+
+    .panes-container {
+        height: 100%;
+        left: 0;
+        position: absolute;
+        top: 0;
+        width: 100%;
+    }
+
+    .pane {
+        background: @paneBg;
+        box-shadow: @paneShadow;
+        display: block;
+        height: 100%;
+        margin: @paneMargin;
+        min-height: 100%;
+        position: absolute;
+        width: @paneWidth;
+    }
+}

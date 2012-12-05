@@ -1,0 +1,31 @@
+body,
+html {
+  font: normal 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+  width: 100%;
+}
+.viewport {
+  background: #cccccc;
+  height: 100%;
+  width: 100%;
+}
+.viewport .panes-container {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+.viewport .pane {
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+  display: block;
+  height: 100%;
+  margin: 0 0 0 1rem;
+  min-height: 100%;
+  position: absolute;
+  width: 450px;
+}
