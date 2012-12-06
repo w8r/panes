@@ -37,5 +37,16 @@ body, html {
         margin: @paneMargin;
         min-height: 100%;
         width: @paneWidth;
+
+        &.hide {
+            display: none;
+        }
+
+        &.shim{
+            background: rgba(0,0,0,0.5);
+            cursor: pointer;
+            position: absolute;
+            top: 0;
+        }
     }
 }

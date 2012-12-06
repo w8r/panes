@@ -29,3 +29,12 @@ html {
   min-height: 100%;
   width: 450px;
 }
+.viewport .pane.hide {
+  display: none;
+}
+.viewport .pane.shim {
+  background: rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+}

@@ -1,4 +1,4 @@
-(function($, Model, View, Collection) {
+(function($, Model, View, Collection, throttle, bindAll) {
 
     var getStyle = function(el, styleProp) {
         var value = el.style[styleProp];
@@ -57,12 +57,6 @@
         bufferPanes: 3,
 
         /**
-         * First displayed(not collapsed) pane
-         * @type {Number}
-         */
-        firstVisiblePane: 0,
-
-        /**
          * Shift correction value, used to fill the viewport with panes
          * seamlessly: if there's more panes than the viewport can contain,
          * the first one should be partly displayed
@@ -83,13 +77,25 @@
         viewportSize: null,
 
         /**
+         * Pane responsible for shifting
+         * @type {HTMLElement}
+         */
+        shifter: null,
+
+        /**
+         * Shim pane to cover partly shown panes and to be clicked to move back
+         * @type {HTMLElement}
+         */
+        shim: null,
+
+        /**
          * @constructor
          * @param {Object}
          *            options
          */
         initialize: function(options) {
             console.log('Panes:constructor', options);
-            _.bindAll(this, 'addPane', 'removePane', 'insertPane');
+            bindAll(this, 'addPane', 'removePane', 'insertPane');
 
             this.model.on('add', this.addPane);
             this.model.on('remove', this.removePane);
@@ -101,6 +107,8 @@
             this.paneWidth = this.measurePane();
             this.panesPerViewport = Math.floor(this.viewportSize.w / this.paneWidth);
             this.adjustCanvasToViewport();
+            this.createShim();
+            this.bindEvents();
 
             this.render();
         },
@@ -139,16 +147,46 @@
         },
 
         /**
+         * Creates pane shim
+         */
+        createShim: function() {
+            var shim = this.shim = this.createPane();
+            shim.className += ' shim hide';
+            shim.style.left = 0;
+            shim.style.marginLeft = (this.viewportSize.w - (this.panesPerViewport + 1) * this.paneWidth) + 'px';
+            this.el.appendChild(shim);
+        },
+
+        /**
          * Adjust canvas to contain buffer space to the left
          */
         adjustCanvasToViewport: function() {
-            var bufferMargin = this.bufferMargin = (this.bufferPanes + 1) * this.paneWidth,
-                width = this.viewportSize.w + bufferMargin,
+            var bufferMargin = this.bufferMargin = this.bufferPanes * this.paneWidth,
+                width = this.viewportSize.w + bufferMargin * 2,
                 containerStyle = this.container.style;
 
             containerStyle.width = width + 'px';
             containerStyle.height = this.viewportSize.h + 'px';
             containerStyle.left = -bufferMargin + 'px';
+        },
+
+        /**
+         * Binds event listeners
+         */
+        bindEvents: function() {
+            // resize
+            this.resizeListener = window.addEventListener('resize', throttle(function() {
+                this.updateViewportSize();
+                this.adjustCanvasToViewport();
+                if(this.model.length) {
+                    this.adjust(this.current);
+                }
+            }.bind(this), 50), false);
+
+            // shim click
+            this.shimClickListener = this.shim.addEventListener('click', function() {
+                this.adjust(--this.current);
+            }.bind(this), false);
         },
 
         /**
@@ -198,48 +236,91 @@
                 pane = this.createPane(model),
                 container = options.container || this.container,
                 newPanesCount = this.panesCount + 1;
-            console.log('Panes:addPane', arguments, pos, this.bufferMargin, this.correction);
-            // first pane - position
-            if(pos === 0) {
-                pane.style.marginLeft = this.bufferMargin + 'px';
+            console.log('Panes:addPane', arguments, pos, options.at, options.index, this.panesCount);
+
+            // insert at pos
+            if(pos < this.panesCount) {
+                console.log(this.model.models[pos + 1])
+                var nextPane = this.model.models[pos + 1]._view.el;
+                this.container.insertBefore(pane, nextPane);
             } else {
-                // haha, that's it
-                if(newPanesCount > this.panesPerViewport) {
-                    // "Teaser pane": shift so that the viewport would be filled
-                    // seamlessly it means adjusting margin so that there should
-                    // be no empty space after the rightmost pane.
-                    if(newPanesCount === this.panesPerViewport + 1) {
-                        this.correction = this.viewportSize.w - this.paneWidth * this.panesPerViewport;
-                    }
-
-                    // if there is a margin buffer to use - use it
-                    if(this.bufferMargin > this.paneWidth) {
-                        this.bufferMargin -= this.paneWidth;
-                        console.log('margin', this.bufferMargin + this.correction)
-                        collection.models[0]._view.el.style.marginLeft = this.bufferMargin + this.correction + 'px';
-                    } else {
-                        // else start removing(collapsing) panes
-                        // that are out of bounds
-                        var firstVisible = this.firstVisiblePane,
-                            first = collection.models[firstVisible]._view.el,
-                            next = collection.models[firstVisible + 1]._view.el;
-
-                        // copy margin to the next one
-                        console.log(first.style.marginLeft)
-                        next.style.marginLeft = first.style.marginLeft;
-                        first.style.marginLeft = '';
-                        // constrict
-                        first.style.display = 'none';
-
-                        // set iterator to the first expanded
-                        this.firstVisiblePane++;
-                    }
-                }
+                // append
+                this.container.appendChild(pane);
             }
 
             this.addView(model, pane);
-            this.container.appendChild(pane);
+            this.current = pos;
+
+            if(!options.silent) {
+                this.adjust(this.current, collection);
+            }
             console.groupEnd('addPane');
+        },
+
+        /** ********************************************************************
+         *
+         * [||||| buf | buf || vis | vis | current || buf | buf ||||||]
+         *                                    ^
+         * ********************************************************************/
+        adjust: function(current, collection) {
+
+            // current pane position is the rightmost, so
+            var firstVisiblePane = Math.max(0, current - this.panesPerViewport - this.bufferPanes),
+                lastVisiblePane = Math.min(this.panesCount, current + this.bufferPanes),
+                i, len, pane,
+                // calculate position
+                leftBufferSize = Math.max(0, current + 1 - this.panesPerViewport - firstVisiblePane),
+                pos = this.bufferMargin - (leftBufferSize * this.paneWidth),
+                shim = this.shim;
+
+            // "Teaser pane": shift so that the viewport would be filled
+            // seamlessly it means adjusting margin so that there should
+            // be no empty space after the rightmost pane.
+            if(leftBufferSize) {
+                var correction = this.viewportSize.w - this.paneWidth * this.panesPerViewport;
+                pos += correction;
+
+                if(!shim.isDisplayed) {
+                    shim.className = this.shim.className.replace('hide', '');
+                    shim.isDisplayed = true;
+                }
+            } else {
+                if(shim.isDisplayed) {
+                    shim.className += ' hide';
+                    shim.isDisplayed = false;
+                }
+            }
+
+            console.group('Viewport state');
+            console.log('\tmax panes per viewport:', this.panesPerViewport, ', buffer: ', this.bufferPanes);
+            console.log('\tcorrection needed: ', !! correction, ', correction size:', correction);
+            console.log('\tcurrent:', current, ', size:', this.panesCount);
+            console.log('\tfirst visible:', firstVisiblePane, ', left buffer size:', leftBufferSize);
+            console.log('\tlast visible:', firstVisiblePane);
+            console.log('pos', pos);
+            console.groupEnd('Viewport state');
+
+            // one loop
+            for(var i = 0, len = this.panesCount; i < len; i++) {
+                pane = this.model.models[i]._view.el;
+
+                // hide stacked, they're out of view anyway
+                if((i < firstVisiblePane) || (i > lastVisiblePane)) {
+                    pane.style.display = 'none';
+                } else {
+                    // it's the shifter
+                    if(i === firstVisiblePane) {
+                        // release last shifter from its duties
+                        if(this.shifter && pane !== this.shifter) {
+                            this.shifter.style.marginLeft = '';
+                        }
+                        // cache shifter
+                        this.shifter = pane;
+                        pane.style.marginLeft = pos + 'px';
+                    }
+                    pane.style.display = 'block';
+                }
+            }
         },
 
         /**
@@ -256,43 +337,17 @@
          */
         removePane: function(model, collection, options) {
             console.group('removePane');
-            console.log('Panes:removePane', arguments, this.model.length, this.panesPerViewport);
             options = options || {};
-            var pos = collection.indexOf(model),
+            var pos = ('index' in options) ? options.index : collection.indexOf(model),
                 pane = model._view.el,
                 newPanesCount = this.panesCount - 1;
+            console.log('Panes:removePane', arguments, pos, options.at, options.index);
 
-            if(newPanesCount >= this.panesPerViewport) {
-                // there are panes out of view, move them forward
-                var firstVisible = this.firstVisiblePane,
-                    first, prev;
-
-                // fix correction, we don't need teaser pane anymore
-                if(newPanesCount === this.panesPerViewport) {
-                    this.correction = 0;
-                }
-
-                if(firstVisible === 0) {
-                    // no constricted panes - move first one to the right
-                    first = collection.models[0]._view.el;
-                    this.bufferMargin += this.paneWidth;
-                    first.style.marginLeft = this.bufferMargin + this.correction + 'px';
-                } else {
-                    first = collection.models[firstVisible]._view.el;
-                    prev = collection.models[firstVisible - 1]._view.el;
-
-                    // copy margin from the expanded one
-                    prev.style.marginLeft = first.style.marginLeft;
-                    first.style.marginLeft = '';
-                    // then expand
-                    prev.style.display = 'block';
-
-                    // it is now first expanded pane
-                    this.firstVisiblePane--;
-                }
-            }
-
+            this.current = pos - 1;
             this.removeView(model, pane);
+            if(!options.silent) {
+                this.adjust(this.current);
+            }
             console.groupEnd('removePane');
         },
 
@@ -353,16 +408,29 @@
         render: function() {
             console.log('Panes:render', arguments);
             // create all the panes at once, use DocumentFragment to boost
-            var paneOptions = {
-                container: document.createDocumentFragment()
-            };
-            for(var i = 0, len = this.model.length; i < len; i++) {
-                paneOptions.at = i;
-                this.addPane(this.model.models[i], this.model, paneOptions);
+            if(this.model.length) {
+                var paneOptions = {
+                    container: document.createDocumentFragment(),
+                    silent: true
+                };
+                for(var i = 0, len = this.model.length; i < len; i++) {
+                    paneOptions.at = i;
+                    this.addPane(this.model.models[i], this.model, paneOptions);
+                }
+                this.container.appendChild(paneOptions.container);
+                this.adjust(this.current);
             }
-            this.container.appendChild(paneOptions.container);
+        },
+
+        /**
+         * Destructor
+         * @return {[type]} [description]
+         */
+        destroy: function() {
+            window.removeEventListener('resize', this.resizeListener);
+            this.shim.removeEventListener('click', this.shimClickListener);
         }
 
     });
 
-})(jQuery, Backbone.Model, Backbone.View, Backbone.Collection);
+})(jQuery, Backbone.Model, Backbone.View, Backbone.Collection, _.throttle, _.bindAll);
