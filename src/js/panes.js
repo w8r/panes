@@ -173,6 +173,14 @@
             if (pos === 0) {
                 pane.style.marginLeft = this.bufferMargin + 'px';
             } else if (collection.length > this.panesPerViewport) {
+                // shift so that the viewport would be filled seamlessly
+                // it means adjusting margin so that there should be no empty
+                // space after the rightmost pane
+                var correction =
+                        this.viewportSize.w - this.paneWidth
+                                * this.panesPerViewport;
+                console.log('correction', correction);
+
                 // if there is a margin buffer to use - use it
                 if (this.bufferMargin > this.paneWidth) {
                     this.bufferMargin -= this.paneWidth;

@@ -5,7 +5,7 @@
      * 
      * @type {View}
      */
-    var Pane = this.Pane = mvc.View.extend({
+    var Pane = this.Pane = View.extend({
                 initialize : function() {
                     View.prototype.initialize.apply(this, arguments);
                     this.render();
