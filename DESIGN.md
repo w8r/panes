@@ -27,4 +27,4 @@ Layout variants:
 
 ## PinnedPanesStack
 
-Holds always visible panes like "next" pane.
+Holds always visible(fixed) panes like "next" pane.
