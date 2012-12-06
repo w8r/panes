@@ -253,9 +253,9 @@
             console.log('Panes:addPane', arguments, pos, options.at, options.index, this.panesCount);
 
             if(this.animation) {
-                pane.style.width = 0 + 'px';
+                pane.style.marginLeft = this.paneWidth + 'px';
                 if(pos && pos !== this.panesCount) {
-                    pane.style.marginLeft = this.paneWidth + 'px';
+                    pane.style.width = 0 + 'px';
                 }
             }
 
@@ -278,10 +278,11 @@
 
             if(this.animation) {
                 var properties = {
-                    width: 450
+                    marginLeft : 11
+                    // width: 450
                 };
                 if(pos && pos !== this.panesCount) {
-                    properties.marginLeft = 11;
+                    properties.width = 450;
                 }
                 this.animate(pane, properties, this.shiftDuration);
             }
@@ -309,6 +310,10 @@
             console.log('Panes:removePane', arguments, pos, options.at, options.index);
 
             this.current = pos - 1;
+            //if(this.animation) {
+            //    this.adjust(this.current, collection);
+            // }
+
             this.removeView(model, pane);
 
             if(this.animation) {
