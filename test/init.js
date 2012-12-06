@@ -8,9 +8,9 @@
         view : Pane
     };
 
-    var models = [],
-        // [new mvc.Model(modelOptions), new mvc.Model(modelOptions),
-        // new mvc.Model(modelOptions), new mvc.Model(modelOptions)],
+    var models = //[],
+         [new Model(modelOptions), new Model(modelOptions),
+         new Model(modelOptions), new Model(modelOptions)],
         collection = new Collection(models),
         panes = this.panes = new Panes({
                     el : $('#viewport'),
