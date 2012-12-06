@@ -10,11 +10,13 @@
 
     var models = // [],
     [new Model(modelOptions), new Model(modelOptions),
-             new Model(modelOptions), new Model(modelOptions)],
+                             new Model(modelOptions), new Model(modelOptions)],
         collection = new Collection(models),
         panes = this.panes = new Panes({
             el: $('#viewport'),
-            model: collection
+            model: collection,
+            animation: true,
+            animate: animate
         });
 
     // add pane
