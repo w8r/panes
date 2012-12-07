@@ -144,6 +144,7 @@
                 w: this.el.offsetWidth,
                 h: this.el.offsetHeight
             };
+            this.panesPerViewport = Math.floor(this.viewportSize.w / this.paneWidth);
             return size;
         },
 
@@ -179,9 +180,18 @@
         },
 
         /**
+         * Gets correction size for partly concealed panes
+         * @return {Number}
+         */
+        getCorrection: function() {
+            return this.viewportSize.w - this.paneWidth * this.panesPerViewport;
+        },
+
+        /**
          * Adjusts shim size
          */
         adjustShim: function() {
+            console.log('adjust shim')
             this.shim.style.marginLeft = (this.viewportSize.w - (this.panesPerViewport + 1) * this.paneWidth) + 'px';
         },
 
@@ -208,7 +218,7 @@
                 this.updateViewportSize();
                 this.adjustCanvasToViewport();
                 if(this.model.length) {
-                    this.adjust(this.current, this.model);
+                    this.adjust(this.current);
                 }
                 this.adjustShim();
             }.bind(this), 100), false);
@@ -246,14 +256,6 @@
 
             this.container.removeChild(pane);
             return width + metrics.margin.left + metrics.margin.right;
-        },
-
-        /**
-         * Gets correction size for partly concealed panes
-         * @return {Number}
-         */
-        getCorrection: function() {
-            return this.viewportSize.w - this.paneWidth * this.panesPerViewport;
         },
 
         /**
@@ -474,7 +476,7 @@
          * @param {Number}
          *            pos
          */
-        shift: function(pane, pos, correction, withAnimation){
+        shift: function(pane, pos, correction, withAnimation) {
             // release last shifter from its duties
             if(this.shifter && pane !== this.shifter) {
                 console.log('change shifter');
@@ -513,7 +515,6 @@
         navigate: function(id, callback) {
             // just shift to the right pane, calling the adjust method with
             // animation if needed
-
             this.adjust(id, this.animation);
         },
 
