@@ -10,7 +10,7 @@
 
     var models = // [],
     [new Model(modelOptions), new Model(modelOptions),
-            new Model(modelOptions), new Model(modelOptions)],
+                    new Model(modelOptions), new Model(modelOptions)],
         collection = new Collection(models),
         panes = this.panes = new Panes({
             el: $('#viewport'),
@@ -63,7 +63,7 @@
     // goto middle pane
     $('#goto-pane').click(function() {
         var pos = $('#goto-pane-pos').val();
-        panes.adjust(pos);
+        panes.navigate(pos);
         updateMiddleIterator(null, collection);
     });
 

@@ -100,7 +100,7 @@
 
         animate: null,
 
-        shiftDuration: 300,
+        shiftDuration: 200,
 
         /**
          * @constructor
@@ -215,7 +215,7 @@
 
             // shim click
             this.shimClickListener = this.shim.addEventListener('click', function() {
-                this.adjust(--this.current, this.model);
+                this.navigate(--this.current, this.model);
             }.bind(this), false);
         },
 
@@ -298,7 +298,7 @@
             this.current = pos;
 
             if(!options.silent && !this.animation) {
-                this.adjust(this.current, collection);
+                this.adjust(this.current);
             }
 
             if(this.animation) {
@@ -319,7 +319,7 @@
                     marginLeft: this.paneMetrics.margin.left,
                     width: this.paneMetrics.width
                 }, this.shiftDuration, function() {
-                    this.adjust(this.current, collection);
+                    this.adjust(this.current);
                 }.bind(this));
             }
             console.groupEnd('addPane');
@@ -368,10 +368,10 @@
                         width: 0
                     }, this.shiftDuration, function() {
                         pane.parentNode.removeChild(pane);
-                        this.adjust(this.current, this.model);
+                        this.adjust(this.current);
                     }.bind(this));
                 } else {
-                    this.adjust(this.current, this.model);
+                    this.adjust(this.current);
                 }
             }
             console.groupEnd('removePane');
@@ -420,7 +420,7 @@
          * [||||| buf | buf || vis | vis | current || buf | buf ||||||]
          *                                    ^
          **********************************************************************/
-        adjust: function(current, collection) {
+        adjust: function(current, withAnimation) {
             // current pane position is the rightmost, so
             var firstVisiblePane = Math.max(0, current - this.panesPerViewport - this.bufferPanes),
                 lastVisiblePane = Math.min(this.panesCount, current + this.bufferPanes),
@@ -460,7 +460,7 @@
                     this.showPane(pane);
                     // it's the shifter
                     if(i === firstVisiblePane) {
-                        this.shift(pane, pos, correction);
+                        this.shift(pane, pos, correction, withAnimation);
                     }
                 }
             }
@@ -474,7 +474,7 @@
          * @param {Number}
          *            pos
          */
-        shift: function(pane, pos, correction) {
+        shift: function(pane, pos, correction, withAnimation){
             // release last shifter from its duties
             if(this.shifter && pane !== this.shifter) {
                 console.log('change shifter');
@@ -493,14 +493,28 @@
                 pane.el.className += ' shifter';
             }
 
-            if(false && this.animation && (correction || correction !== this.correction)) {
-                pane.el.style.marginLeft = pos - correction + 'px';
+            // animate only if it wasn't animated before
+            if(withAnimation && this.animation) {
                 this.animate(pane.el, {
                     marginLeft: pos
                 }, this.shiftDuration);
             } else {
                 pane.el.style.marginLeft = pos + 'px';
             }
+            this.shifterPos = pos;
+        },
+
+        /**
+         * [navigate description]
+         * @param  {[type]}   id       [description]
+         * @param  {Function} callback [description]
+         * @return {[type]}            [description]
+         */
+        navigate: function(id, callback) {
+            // just shift to the right pane, calling the adjust method with
+            // animation if needed
+
+            this.adjust(id, this.animation);
         },
 
         /**
@@ -535,7 +549,7 @@
                     console.log('animate shim', shim);
                     this.animate(shim, {
                         left: -(this.paneWidth + parseInt(shim.style.marginLeft))
-                    }, this.shiftDuration);
+                    }, this.shiftDuration / 2);
                 } else {
                     shim.className += ' hide';
                 }
@@ -554,7 +568,7 @@
                     console.log('animate shim', shim);
                     this.animate(shim, {
                         left: 0
-                    }, this.shiftDuration);
+                    }, this.shiftDuration / 2);
                 } else {
                     shim.className = this.shim.className.replace('hide', '');
                 }
