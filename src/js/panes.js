@@ -249,6 +249,14 @@
         },
 
         /**
+         * Gets correction size for partly concealed panes
+         * @return {Number}
+         */
+        getCorrection: function() {
+            return this.viewportSize.w - this.paneWidth * this.panesPerViewport;
+        },
+
+        /**
          * Adds a pane at random position, at the top of the stack by default
          *
          * @param {Model}
@@ -299,7 +307,7 @@
                 if(this.shifter && pos === this.panesCount - 1 && this.panesCount > this.panesPerViewport) {
                     var shift = parseInt(this.shifter.el.style.marginLeft) - this.paneWidth;
                     if(this.panesCount === this.panesPerViewport + 1) {
-                        shift += this.correction;
+                        shift += this.getCorrection();
                     }
                     this.animate(this.shifter.el, {
                         marginLeft: shift
@@ -350,7 +358,7 @@
                     if(this.shifter && pos === collection.length && this.panesCount >= this.panesPerViewport) {
                         var shift = parseInt(this.shifter.el.style.marginLeft) + this.paneWidth;
                         if(this.panesCount === this.panesPerViewport) {
-                            shift -= this.correction;
+                            shift -= this.getCorrection();
                         }
                         this.animate(this.shifter.el, {
                             marginLeft: shift
@@ -420,14 +428,14 @@
                 // calculate position
                 leftBufferSize = Math.max(0, Math.min(this.bufferPanes, current + 1 - this.panesPerViewport - firstVisiblePane)),
                 pos = this.bufferMargin - (leftBufferSize * this.paneWidth),
-                correction;
+                correction = 0;
 
             // "Teaser pane": shift so that the viewport would be filled
             // seamlessly it means adjusting margin so that there should
             // be no empty space after the rightmost pane.
             if(leftBufferSize) {
-                correction = this.viewportSize.w - this.paneWidth * this.panesPerViewport;
-                pos += correction;
+                correction = this.getCorrection();
+                pos += this.getCorrection();
                 this.showShim();
             } else {
                 this.hideShim();
@@ -493,7 +501,6 @@
             } else {
                 pane.el.style.marginLeft = pos + 'px';
             }
-            this.correction = correction;
         },
 
         /**
