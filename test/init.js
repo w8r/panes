@@ -10,14 +10,21 @@
 
     var models = // [],
     [new Model(modelOptions), new Model(modelOptions),
-                             new Model(modelOptions), new Model(modelOptions)],
+            new Model(modelOptions), new Model(modelOptions)],
         collection = new Collection(models),
         panes = this.panes = new Panes({
             el: $('#viewport'),
             model: collection,
             animation: true,
             animate: animate
-        });
+        }),
+        updateMiddleIterator = function(model, collection) {
+        $('#goto-pane-pos').val(Math.round(collection.length / 2));
+    };
+    updateMiddleIterator(null, collection);
+
+    // set iterator to the central pane
+    collection.on('add', updateMiddleIterator);
 
     // add pane
     $('#add-pane').click(function() {
@@ -51,6 +58,13 @@
             console.log('remove pane #', pos);
             collection.remove(collection.at(pos));
         }
+    });
+
+    // goto middle pane
+    $('#goto-pane').click(function() {
+        var pos = $('#goto-pane-pos').val();
+        panes.adjust(pos);
+        updateMiddleIterator(null, collection);
     });
 
     console.groupEnd('init');
