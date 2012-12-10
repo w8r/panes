@@ -1,7 +1,9 @@
-(function($) {
+define(['jquery', 'jquery.transition'], function($ /*, polyfill */ ) {
 
-    var animate = this.animate = function(el, properties, duration, easing, complete) {
-        return $(el).animate(properties, duration, easing, complete);
+    return {
+        animate: this.animate = function(el, properties, duration, easing, complete) {
+            return $(el).animate(properties, duration, easing, complete);
+        }
     };
 
-})(jQuery);
+});

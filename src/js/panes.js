@@ -1,4 +1,4 @@
-(function($, Model, View, Collection, throttle) {
+define(['pane'], function(Pane) {
 
     // get computed style
     var getStyle = function(el, styleProp) {
@@ -18,6 +18,31 @@
         isArray = typeof Array.isArray === 'function' ? Array.isArray : function(
     object) {
         return Object.prototype.toString.call(object) == '[object Array]';
+    },
+        // courtesy of underscore.js
+        throttle = function(func, wait) {
+        var context, args, timeout, result;
+        var previous = 0;
+        var later = function() {
+            previous = new Date;
+            timeout = null;
+            result = func.apply(context, args);
+        };
+        return function() {
+            var now = new Date;
+            var remaining = wait - (now - previous);
+            context = this;
+            args = arguments;
+            if(remaining <= 0) {
+                clearTimeout(timeout);
+                timeout = null;
+                previous = now;
+                result = func.apply(context, args);
+            } else if(!timeout) {
+                timeout = setTimeout(later, remaining);
+            }
+            return result;
+        };
     };
 
     // https://gist.github.com/1312328
@@ -41,7 +66,39 @@
     /**
      * @class Panes
      */
-    var Panes = this.Panes = View.extend({
+    var Panes = this.Panes = function(options) {
+        console.log('Panes:constructor', options);
+
+        // View.prototype.initialize.apply(this, arguments);
+        // just copy the options
+        for(var option in options) {
+            this[option] = options[option];
+        }
+        console.log(options.model, this.model);
+
+        // enable addPane, removePane, adjust and destroy as event listeners
+        this.addPane = this.addPane.bind(this);
+        this.removePane = this.removePane.bind(this);
+        this.adjust = this.adjust.bind(this);
+        this.destroy = this.destroy.bind(this);
+
+        if(options.animation) {
+            this.animation = options.animation;
+            this.animate = options.animate;
+        }
+
+        this.updateViewportSize();
+        this.createCanvas();
+        this.paneWidth = this.measurePane();
+        this.panesPerViewport = Math.floor(this.viewportSize.w / this.paneWidth);
+        this.adjustCanvasToViewport();
+        this.createShim();
+        this.bindEvents();
+
+        this.render();
+    };
+
+    Panes.prototype = {
         tagName: 'div',
         className: 'panes',
 
@@ -101,38 +158,6 @@
         animate: null,
 
         shiftDuration: 200,
-
-        /**
-         * @constructor
-         * @param {Object}
-         *            options
-         */
-        initialize: function(options) {
-            console.log('Panes:constructor', options);
-
-            this.addPane = this.addPane.bind(this);
-            this.removePane = this.removePane.bind(this);
-
-            this.model.on('add', this.addPane);
-            this.model.on('remove', this.removePane);
-
-            View.prototype.initialize.apply(this, arguments);
-
-            if(options.animation) {
-                this.animation = options.animation;
-                this.animate = options.animate;
-            }
-
-            this.updateViewportSize();
-            this.createCanvas();
-            this.paneWidth = this.measurePane();
-            this.panesPerViewport = Math.floor(this.viewportSize.w / this.paneWidth);
-            this.adjustCanvasToViewport();
-            this.createShim();
-            this.bindEvents();
-
-            this.render();
-        },
 
         /**
          * Stores viewport size
@@ -261,6 +286,8 @@
         /**
          * Adds a pane at random position, at the top of the stack by default
          *
+         * @public
+         *
          * @param {Model}
          *            model
          * @param {Collection}
@@ -329,6 +356,8 @@
 
         /**
          * Removes random pane
+         *
+         * @public
          *
          * @param {Model}
          *            model Pane model
@@ -418,6 +447,8 @@
         },
 
         /***********************************************************************
+         *
+         * @public
          *
          * [||||| buf | buf || vis | vis | current || buf | buf ||||||]
          *                                    ^
@@ -611,6 +642,8 @@
         /**
          * Destructor
          *
+         * @public
+         *
          * @return {[type]} [description]
          */
         destroy: function() {
@@ -618,6 +651,7 @@
             this.shim.removeEventListener('click', this.shimClickListener);
         }
 
-    });
+    };
 
-})(jQuery, Backbone.Model, Backbone.View, Backbone.Collection, _.throttle);
+    return Panes;
+});
