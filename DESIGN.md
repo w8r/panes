@@ -21,10 +21,11 @@ Layout variants:
     * more flexible than flexbox
   * flexbox
     * flexible, do not need to compute layout by hand
-  * float: left
+  * __float: left__
     * hackish
   * what about rigth-first flow (float: right or reversed flexbox)
 
 ## PinnedPanesStack
 
-Holds always visible(fixed) panes like "next" pane.
+Holds always visible(fixed) panes like "next" pane. Arbitrary shown over
+the viewport or squeezes it from the side.
