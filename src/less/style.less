@@ -15,38 +15,64 @@ body, html {
     width: 100%;
 }
 
-.viewport {
-    background: @containerBg;
-    height: 100%;
-    width: 100%;
-
-    .panes-container {
+.panes{
+    &, .viewport {
         height: 100%;
-        left: -50%;
-        position: absolute;
-        top: 0;
-        width: 200%;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
     }
 
     .pane {
-        background: @paneBg;
-        box-shadow: @paneShadow;
         display: block;
         float: left;
         height: 100%;
-        margin: @paneMargin;
         min-height: 100%;
         width: @paneWidth;
+        overflow-x: hidden;
 
-        &.hide {
-            display: none;
-        }
-
-        &.shim{
-            background: rgba(0,0,0,0.5);
+        .close-pane{
             cursor: pointer;
+            float: right;
+            position: relative;
+            top: 5px;
+            right: 21px;
+            line-height: 20px;
+            float: right;
+            font-size: 20px;
+            color: black;
+            text-shadow: 0 1px 0 white;
+            opacity: 0.2;
+        }
+    }
+
+    .viewport {
+        background: @containerBg;
+
+        .panes-container {
+            height: 100%;
+            left: -50%;
             position: absolute;
             top: 0;
+            width: 200%;
+        }
+
+        .pane {
+            background: @paneBg;
+            box-shadow: @paneShadow;
+            margin: @paneMargin;
+            min-height: 100%;
+
+            &.hide {
+                display: none;
+            }
+
+            &.shim{
+                background: rgba(0,0,0,0.5);
+                cursor: pointer;
+                position: absolute;
+                top: 0;
+            }
         }
     }
 }

@@ -29,3 +29,7 @@ Layout variants:
 
 Holds always visible(fixed) panes like "next" pane. Arbitrary shown over
 the viewport or squeezes it from the side.
+  * Shim is a fixed pane
+  * Fixed panes should be separated, not to mess up collection size
+    and index calculations.
+

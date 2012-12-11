@@ -1,67 +1,4 @@
-define(['pane'], function(Pane) {
-
-    // get computed style
-    var getStyle = function(el, styleProp) {
-        var value = el.style[styleProp];
-        if(value === '') {
-            if(el.currentStyle) {
-                value = el.currentStyle[styleProp];
-            } else {
-                if(window.getComputedStyle) {
-                    value = document.defaultView.getComputedStyle(el, null).getPropertyValue(styleProp);
-                }
-            }
-        }
-        return value;
-    },
-        // isArray polyfill
-        isArray = typeof Array.isArray === 'function' ? Array.isArray : function(
-    object) {
-        return Object.prototype.toString.call(object) == '[object Array]';
-    },
-        // courtesy of underscore.js
-        throttle = function(func, wait) {
-        var context, args, timeout, result;
-        var previous = 0;
-        var later = function() {
-            previous = new Date;
-            timeout = null;
-            result = func.apply(context, args);
-        };
-        return function() {
-            var now = new Date;
-            var remaining = wait - (now - previous);
-            context = this;
-            args = arguments;
-            if(remaining <= 0) {
-                clearTimeout(timeout);
-                timeout = null;
-                previous = now;
-                result = func.apply(context, args);
-            } else if(!timeout) {
-                timeout = setTimeout(later, remaining);
-            }
-            return result;
-        };
-    };
-
-    // https://gist.github.com/1312328
-    Function.prototype.bind = Function.prototype.bind ||
-    function(b) {
-        if(typeof this !== "function") {
-            throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
-        }
-        var a = Array.prototype.slice,
-            f = a.call(arguments, 1),
-            e = this,
-            c = function() {},
-            d = function() {
-            return e.apply(this instanceof c ? this : b || window, f.concat(a.call(arguments)));
-        };
-        c.prototype = this.prototype;
-        d.prototype = new c();
-        return d;
-    };
+define(['helpers', 'pane'], function(helpers, Pane) {
 
     /**
      * @class Panes
@@ -87,6 +24,7 @@ define(['pane'], function(Pane) {
             this.animate = options.animate;
         }
 
+        this.createViewport();
         this.updateViewportSize();
         this.createCanvas();
         this.paneWidth = this.measurePane();
@@ -99,8 +37,24 @@ define(['pane'], function(Pane) {
     };
 
     Panes.prototype = {
+
+        constructor: Panes,
+
         tagName: 'div',
-        className: 'panes',
+
+        className: 'panes-container',
+
+        /**
+         * Models collection
+         * @type {Collection}
+         */
+        model: null,
+
+        /**
+         * Fixed panes array
+         * @type {Array}
+         */
+        fixedPanes: [],
 
         /**
          * Default view constructor for a model
@@ -153,11 +107,29 @@ define(['pane'], function(Pane) {
          */
         shim: null,
 
+        /**
+         * Use animation or not
+         * @type {Boolean}
+         */
         animation: false,
 
+        /**
+         * Animation wrapper. To be implemented elsewhere
+         * @type {Function}
+         */
         animate: null,
 
+        /**
+         * Panes movement animation duration
+         * @type {Number}
+         */
         shiftDuration: 200,
+
+        createViewport: function() {
+            var viewport = this.viewport = document.createElement('div');
+            viewport.className = "viewport";
+            this.el.appendChild(viewport);
+        },
 
         /**
          * Stores viewport size
@@ -166,8 +138,8 @@ define(['pane'], function(Pane) {
          */
         updateViewportSize: function() {
             var size = this.viewportSize = {
-                w: this.el.offsetWidth,
-                h: this.el.offsetHeight
+                w: this.viewport.offsetWidth,
+                h: this.viewport.offsetHeight
             };
             this.panesPerViewport = Math.floor(this.viewportSize.w / this.paneWidth);
             return size;
@@ -177,7 +149,7 @@ define(['pane'], function(Pane) {
          * @return {Number}
          */
         getViewportWidth: function() {
-            return this.el.clientWidth;
+            return this.viewport.clientWidth;
         },
 
         /**
@@ -186,9 +158,9 @@ define(['pane'], function(Pane) {
          * @return {HTMLElement}
          */
         createCanvas: function() {
-            var container = document.createElement('div');
-            container.className = 'panes-container';
-            this.el.appendChild(container);
+            var container = document.createElement(this.tagName);
+            container.className = this.className;
+            this.viewport.appendChild(container);
             this.container = container;
             return container;
         },
@@ -201,7 +173,7 @@ define(['pane'], function(Pane) {
             shim.className += ' shim hide';
             shim.style.left = 0;
             this.adjustShim();
-            this.el.appendChild(shim);
+            this.viewport.appendChild(shim);
         },
 
         /**
@@ -239,19 +211,21 @@ define(['pane'], function(Pane) {
          */
         bindEvents: function() {
             // resize
-            this.resizeListener = window.addEventListener('resize', throttle(function() {
+            this.resizeListener = helpers.throttle(function() {
                 this.updateViewportSize();
                 this.adjustCanvasToViewport();
                 if(this.model.length) {
                     this.adjust(this.current);
                 }
                 this.adjustShim();
-            }.bind(this), 100), false);
+            }.bind(this), 100);
+            window.addEventListener('resize', this.resizeListener, false);
 
             // shim click
-            this.shimClickListener = this.shim.addEventListener('click', function() {
+            this.shimClickListener = function() {
                 this.navigate(--this.current, this.model);
-            }.bind(this), false);
+            }.bind(this);
+            this.shim.addEventListener('click', this.shimClickListener, false);
         },
 
         /**
@@ -269,7 +243,7 @@ define(['pane'], function(Pane) {
             pane.style.left = '-9999px';
             this.container.appendChild(pane);
 
-            margins = getStyle(pane, 'margin').split(' ');
+            margins = helpers.getStyle(pane, 'margin').split(' ');
             width = parseInt(pane.clientWidth);
             metrics = this.paneMetrics = {
                 width: width,
@@ -308,10 +282,11 @@ define(['pane'], function(Pane) {
             var pos = options.index || collection.indexOf(model),
                 pane = this.createPane(model),
                 container = options.container || this.container,
-                newPanesCount = this.panesCount + 1;
+                newPanesCount = this.panesCount + 1,
+                animation = ('animation' in options) ? options.animation : this.animation;
             console.log('Panes:addPane', arguments, pos, options.at, options.index, this.panesCount);
 
-            if(this.animation) {
+            if(animation) {
                 pane.style.marginLeft = pane.style.width = '0px';
             }
 
@@ -330,7 +305,7 @@ define(['pane'], function(Pane) {
                 this.adjust(this.current);
             }
 
-            if(this.animation) {
+            if(animation) {
                 // Works perfectly if we're appending a pane
                 //  - then it shifts stack to the left.
                 if(this.shifter && pos === this.panesCount - 1 && this.panesCount > this.panesPerViewport) {
@@ -373,19 +348,20 @@ define(['pane'], function(Pane) {
             options = options || {};
             var pos = ('index' in options) ? options.index : collection.indexOf(model),
                 pane = model._view.el,
-                newPanesCount = this.panesCount - 1;
+                newPanesCount = this.panesCount - 1,
+                animation = ('animation' in options) ? options.animation : this.animation;
             console.log('Panes:removePane', arguments, pos, '/', collection.length, options.at, options.index);
 
             this.current = pos - 1;
             this.removeView(model, pane);
 
             // remove element instantly
-            if(!this.animation) {
+            if(!animation) {
                 pane.parentNode.removeChild(pane);
             }
 
             if(!options.silent) {
-                if(this.animation) {
+                if(animation) {
                     if(this.shifter && pos === collection.length && this.panesCount >= this.panesPerViewport) {
                         var shift = parseInt(this.shifter.el.style.marginLeft) + this.paneWidth;
                         if(this.panesCount === this.panesPerViewport) {
@@ -408,6 +384,65 @@ define(['pane'], function(Pane) {
             console.groupEnd('removePane');
         },
 
+
+        /**
+         * Fixes pane(new or exisiting) at position
+         * @param  {Model} model
+         * @param  {Object} options
+         */
+        fixPane: function(model, options) {
+            // can work with existing pane, can create new ones
+            var exists = (model._view && model._view.el),
+                pane = exists ? model._view.el : this.createPane();
+            console.log(pane);
+            var paneStyle = pane.style,
+                overlay = options.over,
+                animation = ('animation' in options) ? options.animation : this.animation;
+            pane.className += ' fixed';
+
+            // position pane
+            if(options.side === 'left') {
+                pane.style.left = 0;
+            } else {
+                pane.style.right = 0;
+            }
+
+            console.log('positioned')
+            // if(animation) {
+            // } else {
+            // show over the viewport, like shim
+            if(overlay) {} else {
+                if(options.side === 'left') {
+                    this.viewport.style.marginLeft = this.paneWidth + 'px';
+                    console.log('left', this.el.style.marginLeft, this.paneWidth);
+                } else {
+                    // squeeze viewport
+                    console.log('right')
+                    this.viewport.style.marginRight = this.paneWidth + 'px';
+                }
+                this.viewport.style.width = this.viewportSize.w - this.paneWidth + 'px';
+                console.log(this.el, options.side);
+                this.resizeListener();
+            }
+
+            pane.innerHTML = '<h3>Fixed</h3>';
+
+            // if(exists && pane.parentNode) {
+            //     // remove from its pos
+            //     this.removePane(model, this.model);
+            // } else {
+            //     this.addView(model, pane);
+            //     this.panesCount--;
+            // }
+            // this.fixedPanes.push(model);
+            // }
+            if(options.side === 'left') {
+                this.el.insertBefore(pane, this.viewport);
+            } else {
+                this.el.appendChild(pane);
+            }
+        },
+
         /**
          * Adds pane to the model view as the container(.el)
          *
@@ -418,12 +453,10 @@ define(['pane'], function(Pane) {
          * @returns {HTMLElement} pane
          */
         addView: function(model, pane) {
-            var viewOptions = {
+            model._view = new(model.view || this.defaultView)({
                 model: model,
                 el: pane
-            },
-                viewConstructor = model.view || this.defaultView;
-            model._view = new viewConstructor(viewOptions);
+            });
             this.panesCount++;
             return pane;
         },

@@ -18,7 +18,7 @@ require.config({
 });
 
 // app logic
-requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbone, Pane, Panes) {
+requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbone, Pane, Panes, helpers) {
     var Model = Backbone.Model,
         View = Backbone.View,
         Collection = Backbone.Collection;
@@ -27,18 +27,27 @@ requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbo
     console.group('Panes test');
     console.group('init');
 
-    var modelOptions = {
-        view: Pane
+    var ModelFactory = this.ModelFactory = {
+        create: function(num) {
+            num = num || 0;
+            var modelOptions = {
+                view: Pane
+            }
+            models = [];
+            for(var i = 0; i < num; i++) {
+                models.push(new Model(modelOptions));
+            }
+            return models;
+        }
     };
 
-    var models = // [],
-    [new Model(modelOptions), new Model(modelOptions), new Model(modelOptions), new Model(modelOptions)],
+    var models = ModelFactory.create(6),
         collection = new Collection(models),
         panes = this.panes = new Panes({
-            el: document.getElementById('viewport'),
+            el: document.getElementById('panes'),
             model: collection,
             animation: true,
-            animate: animate
+            animate: helpers.animate
         }),
         updateMiddleIterator = function(model, collection) {
         $('#goto-pane-pos').val(Math.round(collection.length / 2));
@@ -50,11 +59,12 @@ requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbo
 
     // set iterator to the central pane
     collection.on('add', updateMiddleIterator);
+    collection.on('remove', updateMiddleIterator);
 
     // add pane
     $('#add-pane').click(function() {
         console.log('add pane triggered');
-        collection.add(new Model(modelOptions), {
+        collection.add(ModelFactory.create(1), {
             at: collection.length
         });
     });
@@ -70,7 +80,7 @@ requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbo
         var pos = $('#add-pane-pos').val();
         if(pos <= collection.length) {
             console.log('add pane @', pos);
-            collection.add(new Model(modelOptions), {
+            collection.add(ModelFactory.create(1), {
                 at: pos
             });
         }
@@ -90,6 +100,22 @@ requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbo
         var pos = $('#goto-pane-pos').val();
         panes.navigate(pos);
         updateMiddleIterator(null, collection);
+    });
+
+    // fixed pane to the left
+    $('#nav-fix-left').click(function() {
+        console.log('nav pane left triggered');
+        panes.fixPane(ModelFactory.create(1)[0], {
+            side: 'left'
+        });
+    });
+
+    // fixed pane to the left
+    $('#nav-fix-right').click(function() {
+        console.log('nav pane left triggered');
+        panes.fixPane(ModelFactory.create(1)[0], {
+            side: 'left'
+        });
     });
 
     console.groupEnd('init');
