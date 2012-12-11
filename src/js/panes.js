@@ -397,35 +397,63 @@ define(['helpers', 'pane'], function(helpers, Pane) {
             console.log(pane);
             var paneStyle = pane.style,
                 overlay = options.over,
+                side = options.side || 'left',
                 animation = ('animation' in options) ? options.animation : this.animation;
             pane.className += ' fixed';
 
             // position pane
-            if(options.side === 'left') {
-                pane.style.left = 0;
+            if(side === 'left') {
+                pane.style.left = (animation ? -this.paneMetrics.width : 0) + 'px';
+                console.log(pane.style.left);
+                this.el.insertBefore(pane, this.viewport);
             } else {
-                pane.style.right = 0;
+                pane.style.right = (animation ? -this.paneMetrics.width : 0) + 'px';
+                this.el.appendChild(pane);
             }
+            this.addView(model, pane);
+            this.fixedPanes[side] = model;
 
-            console.log('positioned')
-            // if(animation) {
-            // } else {
-            // show over the viewport, like shim
-            if(overlay) {} else {
-                if(options.side === 'left') {
-                    this.viewport.style.marginLeft = this.paneWidth + 'px';
-                    console.log('left', this.el.style.marginLeft, this.paneWidth);
-                } else {
-                    // squeeze viewport
-                    console.log('right')
-                    this.viewport.style.marginRight = this.paneWidth + 'px';
+            console.log('positioned', animation)
+            if(animation) {
+                if(overlay) {} else {
+                    var viewportStyles = {
+                        width: this.viewportSize.w - this.paneMetrics.width
+                    },
+                        paneStyles = {};
+                    paneStyles[side] = 0;
+
+                    viewportStyles[(options.side === 'left') ? 'marginLeft' : 'marginRight'] = this.paneMetrics.width;
+
+                    this.viewport.className += ' condensed';
+                    this.animate(this.viewport, viewportStyles, this.shiftDuration, function() {
+                        this.panesCount--;
+                        this.resizeListener();
+                        // pane.innerHTML = '<h3>Fixed</h3>';
+                    }.bind(this));
+                    this.animate(pane, paneStyles, this.shiftDuration);
                 }
-                this.viewport.style.width = this.viewportSize.w - this.paneWidth + 'px';
-                console.log(this.el, options.side);
-                this.resizeListener();
-            }
+            } else {
+                // show over the viewport, like shim
+                if(overlay) {} else {
+                    if(options.side === 'left') {
+                        this.viewport.style.marginLeft = this.paneMetrics.width + 'px';
+                    } else {
+                        // squeeze viewport
+                        this.viewport.style.marginRight = this.paneMetrics.width + 'px';
+                    }
+                    this.viewport.style.width = this.viewportSize.w - this.paneMetrics.width + 'px';
+                    this.viewport.className += ' condensed';
+                    this.resizeListener();
+                }
 
-            pane.innerHTML = '<h3>Fixed</h3>';
+                pane.innerHTML = '<h3>Fixed</h3>';
+
+                if(options.side === 'left') {
+                    this.el.insertBefore(pane, this.viewport);
+                } else {
+                    this.el.appendChild(pane);
+                }
+            }
 
             // if(exists && pane.parentNode) {
             //     // remove from its pos
@@ -436,13 +464,10 @@ define(['helpers', 'pane'], function(helpers, Pane) {
             // }
             // this.fixedPanes.push(model);
             // }
-            if(options.side === 'left') {
-                this.el.insertBefore(pane, this.viewport);
-            } else {
-                this.el.appendChild(pane);
-            }
+            model.options = options;
         },
 
+        // unfixPane: function(model, options) {},
         /**
          * Adds pane to the model view as the container(.el)
          *
@@ -675,9 +700,7 @@ define(['helpers', 'pane'], function(helpers, Pane) {
         /**
          * Destructor
          *
-         * @public
-         *
-         * @return {[type]} [description]
+         * @public         *
          */
         destroy: function() {
             window.removeEventListener('resize', this.resizeListener);

@@ -9,6 +9,7 @@
   position: absolute;
   right: 50px;
   top: 0;
+  z-index: 5;
 }
 #test .num {
   border: 1px solid #444;

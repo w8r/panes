@@ -5,6 +5,7 @@
 @containerBg: #ccc;
 @paneBg: #f0f0f0;
 @paneShadow: 0 0 10px rgba(0, 0, 0, 0.4);
+@fixedPaneShadow: 0 0 10px rgba(0, 0, 0, 0.8);
 
 body, html {
     font: normal 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -21,6 +22,7 @@ body, html {
         width: 100%;
         position: relative;
         overflow: hidden;
+        z-index: 1;
     }
 
     .pane {
@@ -30,6 +32,13 @@ body, html {
         min-height: 100%;
         width: @paneWidth;
         overflow-x: hidden;
+
+        &.fixed {
+            box-shadow: @fixedPaneShadow;
+            z-index: 2;
+            position: absolute;
+            top: 0;
+        }
 
         .close-pane{
             cursor: pointer;
@@ -48,6 +57,10 @@ body, html {
 
     .viewport {
         background: @containerBg;
+
+        &.condensed {
+            z-index: -1;
+        }
 
         .panes-container {
             height: 100%;

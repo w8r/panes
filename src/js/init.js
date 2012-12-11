@@ -19,7 +19,13 @@ require.config({
 
 // app logic
 requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbone, Pane, Panes, helpers) {
-    var Model = Backbone.Model,
+    var Model = Backbone.Model.extend({
+        destroy: function() {
+            if(!this.collection && this._view) {
+                this._view.destroy();
+            }
+        }
+    }),
         View = Backbone.View,
         Collection = Backbone.Collection;
 
@@ -28,10 +34,11 @@ requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbo
     console.group('init');
 
     var ModelFactory = this.ModelFactory = {
-        create: function(num) {
+        create: function(num, dummy) {
             num = num || 0;
             var modelOptions = {
-                view: Pane
+                view: Pane,
+                dummy: true
             }
             models = [];
             for(var i = 0; i < num; i++) {
@@ -105,17 +112,29 @@ requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbo
     // fixed pane to the left
     $('#nav-fix-left').click(function() {
         console.log('nav pane left triggered');
-        panes.fixPane(ModelFactory.create(1)[0], {
-            side: 'left'
-        });
+        if(!this.toggled) {
+            panes.fixPane(ModelFactory.create(1)[0], {
+                side: 'left'
+            });
+            this.toggled = true;
+        } else {
+            panes.unfixPane(panes.fixedPanes.left);
+            this.toggled = false;
+        }
     });
 
     // fixed pane to the left
     $('#nav-fix-right').click(function() {
         console.log('nav pane left triggered');
-        panes.fixPane(ModelFactory.create(1)[0], {
-            side: 'left'
-        });
+        if(!this.toggled) {
+            panes.fixPane(ModelFactory.create(1)[0], {
+                side: 'right'
+            });
+            this.toggled = true;
+        } else {
+            panes.unfixPane(panes.fixedPanes.right);
+            this.toggled = false;
+        }
     });
 
     console.groupEnd('init');

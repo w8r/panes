@@ -13,6 +13,7 @@ html {
   width: 100%;
   position: relative;
   overflow: hidden;
+  z-index: 1;
 }
 .panes .pane {
   display: block;
@@ -21,6 +22,12 @@ html {
   min-height: 100%;
   width: 450px;
   overflow-x: hidden;
+}
+.panes .pane.fixed {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+  z-index: 2;
+  position: absolute;
+  top: 0;
 }
 .panes .pane .close-pane {
   cursor: pointer;
@@ -36,6 +43,9 @@ html {
 }
 .panes .viewport {
   background: #cccccc;
+}
+.panes .viewport.condensed {
+  z-index: -1;
 }
 .panes .viewport .panes-container {
   height: 100%;
