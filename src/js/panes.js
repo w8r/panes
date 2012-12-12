@@ -6,7 +6,6 @@ define(['helpers', 'pane'], function(helpers, Pane) {
     var Panes = this.Panes = function(options) {
         console.log('Panes:constructor', options);
 
-        // View.prototype.initialize.apply(this, arguments);
         // just copy the options
         for(var option in options) {
             this[option] = options[option];
@@ -19,11 +18,7 @@ define(['helpers', 'pane'], function(helpers, Pane) {
         this.adjust = this.adjust.bind(this);
         this.destroy = this.destroy.bind(this);
 
-        if(options.animation) {
-            this.animation = options.animation;
-            this.animate = options.animate;
-        }
-
+        // build and calculate constants
         this.createViewport();
         this.updateViewportSize();
         this.createCanvas();
@@ -40,10 +35,6 @@ define(['helpers', 'pane'], function(helpers, Pane) {
 
         constructor: Panes,
 
-        tagName: 'div',
-
-        className: 'panes-container',
-
         /**
          * Models collection
          * @type {Collection}
@@ -52,9 +43,9 @@ define(['helpers', 'pane'], function(helpers, Pane) {
 
         /**
          * Fixed panes array
-         * @type {Array}
+         * @type {Object}
          */
-        fixedPanes: [],
+        fixedPanes: {},
 
         /**
          * Default view constructor for a model
@@ -161,8 +152,8 @@ define(['helpers', 'pane'], function(helpers, Pane) {
          * @return {HTMLElement}
          */
         createCanvas: function() {
-            var container = document.createElement(this.tagName);
-            container.className = this.className;
+            var container = document.createElement('div');
+            container.className = 'panes-container';
             this.viewport.appendChild(container);
             this.container = container;
             return container;
@@ -173,7 +164,7 @@ define(['helpers', 'pane'], function(helpers, Pane) {
          */
         createShim: function() {
             var shim = this.shim = this.createPane();
-            shim.className += ' shim hide';
+            helpers.addClass(shim, 'shim hide');
             shim.style.left = 0;
             this.adjustShim();
             this.viewport.appendChild(shim);
@@ -410,8 +401,9 @@ define(['helpers', 'pane'], function(helpers, Pane) {
             var paneStyle = pane.style,
                 overlay = options.over,
                 side = options.side || 'left',
-                animation = ('animation' in options) ? options.animation : this.animation;
-            pane.className += ' fixed';
+                animation = ('animation' in options) ? options.animation : this.animation,
+                viewportCorrection = overlay ? 0 : this.paneMetrics.width;
+            helpers.addClass(pane, 'fixed');
 
             // position pane
             if(side === 'left') {
@@ -429,14 +421,14 @@ define(['helpers', 'pane'], function(helpers, Pane) {
             if(animation) {
                 if(overlay) {} else {
                     var viewportStyles = {
-                        width: this.viewportSize.w - this.paneMetrics.width
+                        width: this.viewportSize.w - viewportCorrection
                     },
                         paneStyles = {};
                     paneStyles[side] = 0;
+                    viewportStyles['margin' + helpers.capitalizeString(side)] = viewportCorrection;
+                    console.log(viewportStyles)
 
-                    viewportStyles[(options.side === 'left') ? 'marginLeft' : 'marginRight'] = this.paneMetrics.width;
-
-                    this.viewport.className += ' condensed';
+                    helpers.addClass(this.viewport, 'condensed');
                     this.animate(this.viewport, viewportStyles, this.shiftDuration, function() {
                         this.panesCount--;
                         this.resizeListener();
@@ -447,14 +439,9 @@ define(['helpers', 'pane'], function(helpers, Pane) {
             } else {
                 // show over the viewport, like shim
                 if(overlay) {} else {
-                    if(options.side === 'left') {
-                        this.viewport.style.marginLeft = this.paneMetrics.width + 'px';
-                    } else {
-                        // squeeze viewport
-                        this.viewport.style.marginRight = this.paneMetrics.width + 'px';
-                    }
-                    this.viewport.style.width = this.viewportSize.w - this.paneMetrics.width + 'px';
-                    this.viewport.className += ' condensed';
+                    this.viewport.style['margin' + helpers.capitalizeString(side)] = viewportCorrection + 'px';
+                    this.viewport.style.width = this.viewportSize.w - viewportCorrection + 'px';
+                    helpers.addClass(this.viewport, 'condensed');
                     this.resizeListener();
                 }
 
@@ -467,16 +454,8 @@ define(['helpers', 'pane'], function(helpers, Pane) {
                 }
             }
 
-            // if(exists && pane.parentNode) {
-            //     // remove from its pos
-            //     this.removePane(model, this.model);
-            // } else {
-            //     this.addView(model, pane);
-            //     this.panesCount--;
-            // }
-            // this.fixedPanes.push(model);
-            // }
             model.options = options;
+            console.groupEnd('addPane');
         },
 
         /**
@@ -485,7 +464,44 @@ define(['helpers', 'pane'], function(helpers, Pane) {
          * @param  {Object} options
          * @return {Model}
          */
-        unfixPane: function(model, options) {},
+        unfixPane: function(model, options) {
+            options = options || model.options;
+            var overlay = !! options.over,
+                side = options.side,
+                pane = model._view.el,
+                animation = ('animation' in options) ? options.animation : this.animation,
+                viewportCorrection = overlay ? 0 : this.paneMetrics.width;
+            console.log('remove sidebar', options.over, options.side);
+
+            this.removeView(model, pane);
+            this.panesCount++;
+
+            if(animation) {
+                var viewportStyles = {
+                    width: parseInt(helpers.getStyle(this.viewport, 'width')) + viewportCorrection
+                },
+                    paneStyles = {};
+                viewportStyles['margin' + helpers.capitalizeString(side)] = 0;
+                paneStyles[side] = -this.paneMetrics.width;
+
+                this.animate(this.viewport, viewportStyles, this.shiftDuration, function() {
+                    this.resizeListener();
+                }.bind(this));
+                this.animate(pane, paneStyles, this.shiftDuration, function() {
+                    pane.parentNode.removeChild(pane);
+                });
+            } else {
+                // fix viewport
+                this.viewport.style['margin' + helpers.capitalizeString(side)] = '';
+                this.viewport.style.width = parseInt(helpers.getStyle(this.viewport, 'width')) + viewportCorrection + 'px';
+
+                pane.parentNode.removeChild(pane);
+                this.resizeListener();
+            }
+
+            delete this.fixedPanes[side];
+            console.groupEnd('removePane');
+        },
 
         /**
          * Adds pane to the model view as the container(.el)
@@ -515,9 +531,6 @@ define(['helpers', 'pane'], function(helpers, Pane) {
          * @returns {HTMLElement} detached pane
          */
         removeView: function(model, pane) {
-            if(!this.animation) {
-
-            }
             this.panesCount--;
             delete model._view;
             return pane;
@@ -594,14 +607,12 @@ define(['helpers', 'pane'], function(helpers, Pane) {
 
                 previousShifter.style.display = display;
                 previousShifter.style.marginLeft = '';
-                previousShifter.className = previousShifter.className.replace(/\s?shifter/g, '');
+                helpers.removeClass(previousShifter, 'shifter');
             }
 
             // cache shifter
             this.shifter = pane;
-            if(pane.el.className.indexOf('shifter') === -1) {
-                pane.el.className += ' shifter';
-            }
+            helpers.addClass(pane.el, 'shifter');
 
             // animate only if it wasn't animated before
             if(withAnimation && this.animation) {
@@ -660,7 +671,7 @@ define(['helpers', 'pane'], function(helpers, Pane) {
                         left: -(this.paneWidth + parseInt(shim.style.marginLeft))
                     }, this.shiftDuration / 2);
                 } else {
-                    shim.className += ' hide';
+                    helpers.addClass(shim, 'hide');
                 }
                 shim.isDisplayed = false;
             }
@@ -671,15 +682,13 @@ define(['helpers', 'pane'], function(helpers, Pane) {
          */
         showShim: function() {
             var shim = this.shim;
-            shim.className = shim.className.replace('hide', '');
             if(!shim.isDisplayed) {
+                helpers.removeClass(shim, 'hide');
                 if(this.animation) {
                     console.log('animate shim', shim);
                     this.animate(shim, {
                         left: 0
                     }, this.shiftDuration / 2);
-                } else {
-                    shim.className = this.shim.className.replace('hide', '');
                 }
                 shim.isDisplayed = true;
             }

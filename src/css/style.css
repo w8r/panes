@@ -64,8 +64,14 @@ html {
   display: none;
 }
 .panes .viewport .pane.shim {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   cursor: pointer;
   position: absolute;
   top: 0;
+}
+.panes .viewport .pane.shim:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+.panes .viewport .pane.shim:active {
+  background: rgba(0, 0, 0, 0.4);
 }

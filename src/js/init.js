@@ -21,12 +21,11 @@ require.config({
 requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbone, Pane, Panes, helpers) {
     var Model = Backbone.Model.extend({
         destroy: function() {
-            if(!this.collection && this._view) {
+            if(this._view && !this.collection) {
                 this._view.destroy();
             }
         }
     }),
-        View = Backbone.View,
         Collection = Backbone.Collection;
 
     // add test
@@ -122,7 +121,7 @@ requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbo
     $('#nav-fix-left').click(function() {
         console.log('nav pane left triggered');
         if(!this.toggled) {
-            panes.fixPane(ModelFactory.create(1)[0], {
+            panes.addPane(ModelFactory.create(1)[0], {
                 side: 'left'
             });
             this.toggled = true;
@@ -136,7 +135,7 @@ requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbo
     $('#nav-fix-right').click(function() {
         console.log('nav pane left triggered');
         if(!this.toggled) {
-            panes.fixPane(ModelFactory.create(1)[0], {
+            panes.addPane(ModelFactory.create(1)[0], {
                 side: 'right'
             });
             this.toggled = true;

@@ -2,6 +2,7 @@ define(['exports', 'jquery', 'jquery.transition'], function(exports, $ /*, polyf
 
     console.log(exports)
 
+    // Function.prototype.bind polyfill
     // https://gist.github.com/1312328
     Function.prototype.bind = Function.prototype.bind ||
     function(b) {
@@ -20,11 +21,63 @@ define(['exports', 'jquery', 'jquery.transition'], function(exports, $ /*, polyf
         return d;
     };
 
+    /**
+     * Has class checker
+     * @param  {HTMLElement}  el
+     * @param  {String}  cls
+     * @return {Boolean}
+     */
+
+    function hasClass(el, cls) {
+        var separator = ' ';
+        return(separator + el.className + separator).indexOf(separator + cls + separator) > -1;
+    }
+
+    /**
+     * Adds class name
+     * @param {HTMLElement} el
+     * @param {String} cls
+     */
+
+    function addClass(el, cls) {
+        if(!hasClass(el, cls)) {
+            el.className = (el.className + ' ' + cls).replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+        };
+        return el;
+    }
+
+    /**
+     * Removes class name from element
+     * @param  {HTMLElement} el
+     * @param  {String} cls
+     * @return {HTMLElement} self
+     */
+
+    function removeClass(el, cls) {
+        el.className = el.className.replace(new RegExp('(^|\\s)' + cls + '(?:\\s|$)'), '$1');
+        return el;
+    }
+
     return {
-        animate: this.animate = function(el, properties, duration, easing, complete) {
+
+        /**
+         * Namespaced animation wrapper
+         * @param  {HTMLElement} el
+         * @param  {Object} properties CSS properties to animate
+         * @param  {Number} [duration] in ms
+         * @param  {String} [easing]
+         * @param  {Function} [complete] callback
+         */
+        animate: function(el, properties, duration, easing, complete) {
             return $(el).animate(properties, duration, easing, complete);
         },
-        // get computed style
+
+        /**
+         * Get computed style
+         * @param  {HTMLElement} el
+         * @param  {String} styleProp
+         * @return {String}
+         */
         getStyle: function(el, styleProp) {
             var value = el.style[styleProp];
             if(value === '') {
@@ -38,12 +91,26 @@ define(['exports', 'jquery', 'jquery.transition'], function(exports, $ /*, polyf
             }
             return value;
         },
-        // isArray polyfill
+
+        /**
+         * isArray polyfill
+         * @param  {Object}  object
+         * @return {Boolean}
+         */
         isArray: typeof Array.isArray === 'function' ? Array.isArray : function(
         object) {
             return Object.prototype.toString.call(object) == '[object Array]';
         },
-        // courtesy of underscore.js
+
+        /**
+         * Throttles function, returning its version that cannot be invoked
+         * more than once per 'wait' ms. Userful for handling reflows on events
+         * that are occurring very fast and often.
+         *
+         * @param  {Function} func
+         * @param  {Number} wait
+         * @return {Function}
+         */
         throttle: function(func, wait) {
             var context, args, timeout, result;
             var previous = 0;
@@ -68,9 +135,18 @@ define(['exports', 'jquery', 'jquery.transition'], function(exports, $ /*, polyf
                 return result;
             };
         },
-        hasClass: function(el, cls) {
-            var separator = ' ';
-            return(separator + el.className + separator).indexOf(separator + cls + separator) > -1;
+
+        addClass: addClass,
+        removeClass: removeClass,
+        hasClass: hasClass,
+
+        /**
+         * Capitalizes string, for css properties
+         * @param  {String} str
+         * @return {String}
+         */
+        capitalizeString: function(str) {
+            return str[0].toUpperCase() + str.substring(1);
         }
     };
 

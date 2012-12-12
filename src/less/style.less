@@ -80,11 +80,19 @@ body, html {
                 display: none;
             }
 
-            &.shim{
-                background: rgba(0,0,0,0.5);
+            &.shim {
+                background: rgba(0,0,0,0.6);
                 cursor: pointer;
                 position: absolute;
                 top: 0;
+
+                &:hover {
+                    background: rgba(0,0,0,0.5);
+                }
+
+                &:active {
+                    background: rgba(0,0,0,0.4);
+                }
             }
         }
     }
