@@ -34,12 +34,21 @@ requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbo
     console.group('init');
 
     var ModelFactory = this.ModelFactory = {
-        create: function(num, dummy) {
+        create: function(num, options) {
             num = num || 0;
             var modelOptions = {
                 view: Pane,
                 dummy: true
+            };
+
+            if(options) {
+                for(var option in options) {
+                    if(options.hasOwnProperty(option)) {
+                        modelOptions[option] = options[option];
+                    }
+                }
             }
+
             models = [];
             for(var i = 0; i < num; i++) {
                 models.push(new Model(modelOptions));
@@ -118,7 +127,7 @@ requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbo
             });
             this.toggled = true;
         } else {
-            panes.unfixPane(panes.fixedPanes.left);
+            panes.removePane(panes.fixedPanes.left);
             this.toggled = false;
         }
     });
@@ -132,7 +141,7 @@ requirejs(['jquery', 'backbone', 'pane', 'panes', 'helpers'], function($, Backbo
             });
             this.toggled = true;
         } else {
-            panes.unfixPane(panes.fixedPanes.right);
+            panes.removePane(panes.fixedPanes.right);
             this.toggled = false;
         }
     });

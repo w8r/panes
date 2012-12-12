@@ -125,6 +125,9 @@ define(['helpers', 'pane'], function(helpers, Pane) {
          */
         shiftDuration: 200,
 
+        /**
+         * Creates viewport container
+         */
         createViewport: function() {
             var viewport = this.viewport = document.createElement('div');
             viewport.className = "viewport";
@@ -278,6 +281,10 @@ define(['helpers', 'pane'], function(helpers, Pane) {
         addPane: function(model, collection, options) {
             console.group('addPane');
 
+            if(arguments.length === 2) {
+                return this.fixPane(model, arguments[1]);
+            }
+
             options = options || {};
             var pos = options.index || collection.indexOf(model),
                 pane = this.createPane(model),
@@ -345,6 +352,11 @@ define(['helpers', 'pane'], function(helpers, Pane) {
          */
         removePane: function(model, collection, options) {
             console.group('removePane');
+
+            if(arguments.length == 1) {
+                return this.unfixPane(model);
+            }
+
             options = options || {};
             var pos = ('index' in options) ? options.index : collection.indexOf(model),
                 pane = model._view.el,
@@ -467,7 +479,14 @@ define(['helpers', 'pane'], function(helpers, Pane) {
             model.options = options;
         },
 
-        // unfixPane: function(model, options) {},
+        /**
+         * Removes fixed pane(sidebar)
+         * @param  {Model} model
+         * @param  {Object} options
+         * @return {Model}
+         */
+        unfixPane: function(model, options) {},
+
         /**
          * Adds pane to the model view as the container(.el)
          *
